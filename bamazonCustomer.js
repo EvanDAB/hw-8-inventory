@@ -1,9 +1,5 @@
-//Shows the DB and also asks the questions
-//Parts 1-6 done
-//Work on 7 and 8
-
 var mysql = require("mysql");
-var checkQ, checkP;
+var result, start, end, stock, newq, price;
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -58,49 +54,48 @@ function startInq() {
         console.log('So you want ' + inquirerResponse.quantity + ' ' + inquirerResponse.product + 's');
         console.log("Lets see if we can get that for you..\n");
         connection.query(
-            "SELECT stock FROM products WHERE ?",
+            "SELECT stock FROM products WHERE product_name = ?",
             [
-                {product_name: inquirerResponse.product}
-                // {stock: inquirerResponse.quantiy}
+                inquirerResponse.product
+                // {stock: inquirerResponse.quantity}
             ],
              function(err, res) {
                 if (err) throw err;
                 // Log all results of the SELECT statement
-                var result = JSON.stringify(res);
-                console.log(result.stock.val);
-                
-
+                result = JSON.stringify(res);
+                start = result.indexOf(':');
+                end = result.indexOf('}');
+                stock = result.slice(start + 1, end)
+                console.log(stock);
+                if (newq <= 0) console.log('We ran out of that. Sorry');
+                if(parseInt(stock) < inquirerResponse.quantity) console.log(`Insufficient quantity!`)
+                else {
+                    newq =  parseInt(stock) - inquirerResponse.quantity;
+                    connection.query(
+                        'UPDATE product SET stock = ? WHERE product_name = ?',
+                        [
+                            newq,
+                            inquirerResponse.product
+                        ],
+                        function(err, res) {
+                            console.log("Current stock of " + inquirerResponse.product + ' is ' + newq);
+                            console.log(newq);
+                        }
+                    );
+                }
+                connection.query(
+                    'SELECT price FROM products where product_name = ?',
+                    [inquirerResponse.product],
+                    function(err, res) {
+                        result = JSON.stringify(res);
+                        start = result.indexOf(':');
+                        end = result.indexOf('}');
+                        price = result.slice(start + 1, end)
+                        console.log('For ' + inquirerResponse.quantity + 'that will be $' + parseInt(price) * inquirerResponse.quantity);
+                    }
+                );
             }   
-    );
-        // If the inquirerResponse confirms, we displays the inquirerResponse's username and pokemon from the answers.
-        // if (inquirerResponse.quantity != '') {
-        //     readProducts2();
-        //     console.log("\nWe have" + inquireResponse.quantity + "many  of ");
-        // } else {
-        //     console.log("\nThat's okay " + inquirerResponse.username + ", come again when you are more sure.\n");
-        // }
+        );
+        
     });
 }
-
-function updateProduct() {
-    console.log("Updating all Rocky Road quantities...\n");
-    connection.query(
-      "UPDATE products SET ? WHERE ?",
-      [
-        {
-          quantity: 100
-        },
-        {
-          address: "Rocky Road" //the item is
-        }
-      ],
-      function(err, res) {
-        console.log(res.affectedRows + " products updated!\n");
-        // Call deleteProduct AFTER the UPDATE completes
-        deleteProduct();
-      }
-    );
-}
-  
-// 'UPDATE products SET quantity = ? WHERE address = ?'
-// connection.query
